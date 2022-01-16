@@ -1,9 +1,9 @@
 /**
  * Entry point of app: don't change this
  */
-import GamePlay from './GamePlay';
-import GameController from './GameController';
-import GameStateService from './GameStateService';
+import GamePlay from './game/GamePlay';
+import GameController from './game/GameController';
+import GameStateService from './game/GameStateService';
 
 const gamePlay = new GamePlay();
 gamePlay.bindToDOM(document.querySelector('#game-container'));
