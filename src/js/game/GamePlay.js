@@ -219,7 +219,7 @@ export default class GamePlay {
     });
   }
 
-  setCursor(cursor) {
+  setCursor(cursor = 'default') {
     this.boardEl.style.cursor = cursor;
   }
 

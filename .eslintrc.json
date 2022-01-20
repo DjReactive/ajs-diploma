@@ -1,4 +1,5 @@
 {
+  "parser": "@babel/eslint-parser",
   "extends": "airbnb-base",
   "env": {
      "es6": true,
@@ -21,6 +22,10 @@
     "no-plusplus": [
       "error",
       { "allowForLoopAfterthoughts": true }
-    ]
+    ],
+    "import/no-cycle": [
+      2, { "maxDepth": 10 }
+    ],
+    "consistent-return": "error"
   }
 }

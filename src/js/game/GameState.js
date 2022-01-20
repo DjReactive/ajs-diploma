@@ -1,4 +1,3 @@
-import themes from '../themes';
 import CustomAI from '../character/AI';
 import AppFunc from '../utils/functions';
 import * as WarClasses from '../character/Classes';
@@ -6,18 +5,25 @@ import { getRandomIntInclusive } from '../utils/generators';
 
 export default class GameState {
   static game = {};
+
   static debug = false;
+
   static teamAI = null;
+
   static AiControl;
+
   static gamePlay;
+
   static gamePoints = 0;
+
   static levels = [
-    '-',  //default 0
+    '-', // default 0
     'prairie',
     'desert',
     'arctic',
-    'mountain'
+    'mountain',
   ];
+
   static allClasses = {
     bowman: WarClasses.Bowman,
     swordsman: WarClasses.Swordsman,
@@ -26,15 +32,17 @@ export default class GameState {
     undead: WarClasses.Undead,
     zombie: WarClasses.Zombie,
   };
+
   static playerClasses = [
-    WarClasses.Bowman,      // лучник 2кл
-    WarClasses.Swordsman,   // мечник 4кл
-    WarClasses.Magician,    // маг 1кл
+    WarClasses.Bowman, // лучник 2кл
+    WarClasses.Swordsman, // мечник 4кл
+    WarClasses.Magician, // маг 1кл
   ];
+
   static aiClasses = [
-    WarClasses.Daemon,      // демон 1кл
-    WarClasses.Undead,      // скелет 4кл
-    WarClasses.Zombie,      // вампир 2кл
+    WarClasses.Daemon, // демон 1кл
+    WarClasses.Undead, // скелет 4кл
+    WarClasses.Zombie, // вампир 2кл
   ];
 
   static initGame(current, initObj) {
@@ -50,55 +58,55 @@ export default class GameState {
   /*
   @current - индекс в массиве команд, с которой начнется игрока
   */
-  static init (gameObj, current = 0, initObj = null) {
+  static init(gameObj, current = 0, initObj = null) {
     this.initGame(current, initObj);
     this.gamePlay = gameObj.gamePlay;
     this.control = gameObj.controller;
     this.game.teams = gameObj.controller.charTeams;
     this.debug = (gameObj.debug !== undefined) ? gameObj.debug : false;
 
-    this.game.teams.forEach(team => {
+    this.game.teams.forEach((team) => {
       if (!this.isPlayerTeam(team)) this.teamAI = team;
-    })
+    });
 
     if (!this.teamAI) throw new Error('Комады для AI в массиве команд не найдено!');
-    this.AiControl = new CustomAI(gameObj);
+    this.AiControl = new CustomAI(gameObj, this);
 
-    this.logMessage(`[= = = = = Retro Game = = = = =]`);
+    this.logMessage('[= = = = = Retro Game = = = = =]');
     this.next(null, true);
   }
 
   // Создание объекта для сохранения игры
   static from() {
-    let date = new Date();
+    const date = new Date();
     // TODO: create object
     return {
       date: this.getDate(date),
       gameinfo: this.game,
       characters: this.getCharacters(),
       points: this.gamePoints,
-    }
+    };
   }
 
   static getDate(date) {
-    let obj = {
+    const obj = {
       day: date.getDate(),
       month: (date.getMonth() + 1),
       year: date.getFullYear(),
       hours: date.getHours(),
       minutes: date.getMinutes(),
-    }
-    for (let key of Object.keys(obj)) {
+    };
+    for (const key of Object.keys(obj)) {
       obj[key] = obj[key] < 10 ? `0${obj[key]}` : String(obj[key]);
     }
     return `${obj.day}.${obj.month}.${obj.year} (${obj.hours}:${obj.minutes})`;
   }
 
   static getCharacters() {
-    let arr = [];
-    let chars = this.control.allPosCharacters;
+    const arr = [];
+    const chars = this.control.allPosCharacters;
     for (let i = 0; i < chars.length; i++) {
-      let obj = {
+      const obj = {
         type: chars[i].character.type,
         level: chars[i].character.level,
         health: chars[i].character.health,
@@ -106,7 +114,7 @@ export default class GameState {
         defence: chars[i].character.defence,
         position: chars[i].position,
         isPlayer: chars[i].isPlayer,
-      }
+      };
       arr.push(obj);
     }
     return arr;
@@ -117,7 +125,8 @@ export default class GameState {
   }
 
   static actionMessage(action, ...array) {
-    let type, message = '', args = (typeof array === 'object') ? array[0] : null;
+    let type; let message = ''; const
+      args = (typeof array === 'object') ? array[0] : null;
     switch (action) {
       case 'attack':
         /*
@@ -128,8 +137,8 @@ export default class GameState {
         */
         type = args.attacker.isPlayer ? 'Player' : 'AI';
         message = `${type} (${args.attacker.character.type} ${args.attacker.character.level} ур.):
-        ${(args.victim.character.health > 0 ? `Наносит ${args.damage} урона` : `Убивает`)} ` +
-        `${args.victim.character.type} (${args.victim.character.level} ур.)`;
+        ${(args.victim.character.health > 0 ? `Наносит ${args.damage} урона` : 'Убивает')} `
+        + `${args.victim.character.type} (${args.victim.character.level} ур.)`;
         break;
       case 'move':
         /*
@@ -154,7 +163,9 @@ export default class GameState {
   @isPlayer - проверить команду на принадлежность реальному игроку
   */
   static isPlayerTeam(team = this.current()) {
-    for (let char of team.characters) return char.isPlayer ? true : false;
+    let isPlayer = false;
+    for (const char of team.characters) isPlayer = char.isPlayer;
+    return isPlayer;
   }
 
   static current() {
@@ -162,22 +173,21 @@ export default class GameState {
   }
 
   static isComplete() {
-    return (this.current().characters.size < 1) ? true : false;
+    return (this.current().characters.size < 1);
   }
 
   static winPoints(add = true) {
     let health = 0;
-    for (let char of this.current().characters) health += char.character.health;
+    for (const char of this.current().characters) health += char.character.health;
     if (add) this.gamePoints += health;
     this.actionMessage('points');
   }
 
   // @withoutStats - не учитывать ход в статистику
   static step(withoutStats = false) {
-    if (!withoutStats) this.game.steps++;
-    this.game.number++;
-    if (this.game.number >= this.game.teams.length)
-      this.game.number = 0;
+    if (!withoutStats) this.game.steps += 1;
+    this.game.number += 1;
+    if (this.game.number >= this.game.teams.length) { this.game.number = 0; }
   }
 
   static next(callback, stepFreeze = false) {
@@ -185,46 +195,48 @@ export default class GameState {
 
     if (this.isComplete()) {
       this.step(true);
-      this.logMessage(`${this.game.map.level} Уровень завершен! Вы ${ this.isPlayerTeam() ? 'победили' : 'проиграли'} AI!`);
-      if (!this.isPlayerTeam()) {
-        this.gamePlay.showError('Вы проиграли!');
-        return;
-      } else this.winPoints();
+      this.logMessage(`${this.game.map.level} Уровень завершен!`
+        + `Вы ${this.isPlayerTeam() ? 'победили' : 'проиграли'} AI!`);
+      if (this.isPlayerTeam()) {
+        // начисляем баллы за уровень
+        this.winPoints();
 
-      // Если уровень существует, то создаем переход на него
-      if (this.levels.length > (this.game.map.level + 1)) {
-        let arr = [];
-        arr = AppFunc.getIndexArrayColumn(this.gamePlay.boardSize, [0, 1]);
-        let fnc = function (arr) {
-          return arr[getRandomIntInclusive(0, arr.length - 1)];
+        // Если уровень существует, то создаем переход на него
+        if (this.levels.length > (this.game.map.level + 1)) {
+          let arr = [];
+          arr = AppFunc.getIndexArrayColumn(this.gamePlay.boardSize, [0, 1]);
+          const fnc = function (newarr) {
+            return newarr[getRandomIntInclusive(0, newarr.length - 1)];
+          };
+          // Данная итерация повышает уровень всех выживших персонажей
+          // и переносит на начальные клетки в новом уровне
+          this.current().characters.forEach((char) => {
+            let position;
+            const current = this.current().characters;
+            char.character.levelup();
+            position = fnc(arr);
+
+            while (AppFunc.checkCellCharacter(position, current) !== null) {
+              position = fnc(arr);
+            }
+            char.position = position;
+          });
+
+          this.game.map.level += 1;
+          this.game.map.name = this.levels[this.game.map.level];
+          this.logMessage(`[= = = = = Переходим на ${this.game.map.name} (${this.game.map.level} уровень)  = = = = = ]`);
+          this.logMessage(`[${this.game.steps} ход] Ход игрока`);
+          return {
+            nextmap: this.game.map.name,
+            level: this.game.map.level,
+          };
         }
-        // Данная итерация повышает уровень всех выживших персонажей и переносит на начальные клетки в новом уровне
-        this.current().characters.forEach(char => {
-          let position;
-          char.character.levelup();
-          position = fnc(arr);
-          while (AppFunc.checkCellCharacter(position, this.current().characters) !== null) position = fnc(arr);
-          char.position = position;
-        });
-
-        this.game.map.level += 1;
-        this.game.map.name = this.levels[this.game.map.level];
-        this.logMessage(`[= = = = = Переходим на ${this.game.map.name} (${this.game.map.level} уровень)  = = = = = ]`);
-        this.logMessage(`[${this.game.steps} ход] Ход игрока`);
-        return {
-          nextmap: this.game.map.name,
-          level: this.game.map.level
-        };
-      } else {
         this.gamePlay.showMessage('Вы полностью прошли игру, поздравляем!');
-        return;
-      }
-    }
-    if (!this.isPlayerTeam()) {
+      } else this.gamePlay.showMessage('Вы проиграли!');
+    } else if (!this.isPlayerTeam()) {
       this.AiControl.think(callback);
       this.logMessage(`[${this.game.steps} ход] Ход компьютера`);
-    } else {
-      this.logMessage(`[${this.game.steps} ход] Ход игрока`);
-    }
+    } else this.logMessage(`[${this.game.steps} ход] Ход игрока`);
+    return null;
   }
 }

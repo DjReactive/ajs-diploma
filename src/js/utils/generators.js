@@ -2,9 +2,13 @@ import Team from '../character/Team';
 import PositionedCharacter from '../character/PositionedCharacter';
 import AppFunc from './functions';
 
+/*
+  Получает случайное целое число в интервале от min до max (включительно)
+*/
 export function getRandomIntInclusive(min, max) {
   return Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min);
 }
+
 /**
  * Generates random characters
  *
@@ -21,13 +25,6 @@ export function* characterGenerator(allowedTypes, maxLevel) {
     Char = allowedTypes[rndType];
     yield new Char(rndLevel);
   }
-}
-
-export function generateTeam(allowedTypes, maxLevel, charsCount, isPlayer) {
-  // TODO: write logic here
-  const team = new Team(isPlayer);
-  addCharactersOnTeam(team, allowedTypes, maxLevel, charsCount, isPlayer);
-  return team;
 }
 
 /*
@@ -59,12 +56,19 @@ export function addCharactersOnTeam(team, allowClasses, maxLevel = 1, count = 1,
   @charObj - объект со свойствами Character
   @position - позиция для размещения
 */
-export function addCharacterOnTeam(team, classObj, charObj) {
-  const Char = new classObj();
+export function addCharacterOnTeam(team, ClassObj, charObj) {
+  const Char = new ClassObj();
   Char.level = charObj.level;
   Char.health = charObj.health;
   Char.attack = charObj.attack;
   Char.defence = charObj.defence;
   const charPos = new PositionedCharacter(Char, charObj.position, charObj.isPlayer);
   team.add(charPos);
+}
+
+export function generateTeam(allowedTypes, maxLevel, charsCount, isPlayer) {
+  // TODO: write logic here
+  const team = new Team(isPlayer);
+  addCharactersOnTeam(team, allowedTypes, maxLevel, charsCount, isPlayer);
+  return team;
 }

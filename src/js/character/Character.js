@@ -17,8 +17,8 @@ export default class Character {
     for (let i = this.level; i < level; i++) {
       if (this.level + 1 <= this.maxlevel) {
         this.level += 1;
-        this.attack = Math.ceil(Math.max(this.attack, this.attack * (80 + this.health) / 100));
-        this.defence = Math.ceil(Math.max(this.defence, this.defence * (80 + this.health) / 100));
+        this.attack = Math.ceil(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
+        this.defence = Math.ceil(Math.max(this.defence, (this.defence * (80 + this.health)) / 100));
         this.health = Math.min(this.health + 80, 100);
       }
     }

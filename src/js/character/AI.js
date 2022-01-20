@@ -1,17 +1,17 @@
 import AppFunc from '../utils/functions';
 import { getRandomIntInclusive } from '../utils/generators';
-import GameState from '../game/GameState';
 
 export default class CustomAI {
-  constructor(gameObj) {
+  constructor(gameObj, gameState) {
     this.ctrl = gameObj.controller;
     this.charTeams = gameObj.controller.charTeams;
     this.gamePlay = gameObj.gamePlay;
     this.state = gameObj.state;
     this.allCharacters = gameObj.controller.allPosCharacters;
     this.boardSize = gameObj.gamePlay.boardSize;
+    this.gameState = gameState;
 
-    this.aiTeam = this.getAiTeam(this.ctrl.charTeams);
+    this.aiTeam = this.getAiTeam();
     this.aiChars = [];
     this.boardLines = [];
   }
@@ -53,29 +53,26 @@ export default class CustomAI {
     (async () => {
       const dmg = ai.character.attacking(target.character);
       await this.gamePlay.showDamage(target.position, dmg);
-      GameState.actionMessage('attack', {
+      this.gameState.actionMessage('attack', {
         attacker: ai,
         victim: target,
         damage: dmg,
       });
       this.refreshTeams();
       callback();
-      GameState.next();
+      this.gameState.next();
     })();
-  }
-
-  defence() {
-
   }
 
   move(ai, position, callback) {
     ai.position = position;
-    GameState.actionMessage('move', {
+    this.gameState.actionMessage('move', {
       character: ai,
       position,
     });
+    this.refreshTeams();
     callback();
-    GameState.next();
+    this.gameState.next();
   }
 
   /*
@@ -91,13 +88,14 @@ export default class CustomAI {
     */
     Array.from(this.allCharacters).forEach((charPos) => {
       if (charPos.isPlayer) {
-        for (let i = 0; i < this.aiChars.length; i++) {
+        for (let aiChar, i = 0; i < this.aiChars.length; i++) {
+          aiChar = this.aiChars[i].ai;
           const obj = {
-            ai: this.aiChars[i].ai,
+            ai: aiChar,
             player: charPos,
-            radius: AppFunc.getCellRadius(this.aiChars[i].ai.position, charPos.position, this.boardLines),
+            radius: AppFunc.getCellRadius(aiChar.position, charPos.position, this.boardLines),
           };
-          obj.canAttack = obj.radius <= this.aiChars[i].ai.character.radius;
+          obj.canAttack = obj.radius <= aiChar.character.radius;
           tactics.push(obj);
         }
       }
@@ -141,7 +139,9 @@ export default class CustomAI {
             }
             if (radius === finalObj.ai.character.radius) arrIndexes.push(position);
           }
-          if (arrIndexes.length > 0) finalObj.position = arrIndexes[getRandomIntInclusive(0, arrIndexes.length - 1)];
+          if (arrIndexes.length > 0) {
+            finalObj.position = arrIndexes[getRandomIntInclusive(0, arrIndexes.length - 1)];
+          }
         }
       });
     } else {
@@ -171,27 +171,28 @@ export default class CustomAI {
     }
   }
 
-  // Возвращает ближайшую клетку к игроку, на которую можно подойти
-  static getMoveToCell(aiChar, players, aiStepsAllow, boardLines) {
-
-  }
-
   // Метод выдает информацию для всех AI, доступные клетки для хода
   getCharsInfo() {
     this.aiChars = [];
+    const appFncStep = AppFunc.setAllowedCharacterStep.bind(AppFunc);
     for (const char of this.aiTeam.characters) {
       const obj = {};
+      const args = [char.character, char.position, this.boardSize, this.allCharacters];
       obj.ai = char;
-      [obj.allowsteps, this.boardLines] = AppFunc.setAllowedCharacterStep(char.character, char.position, this.boardSize, this.allCharacters);
+      [obj.allowsteps, this.boardLines] = appFncStep(...args);
       this.aiChars.push(obj);
     }
   }
 
   // Метод возвращает команду, принадлежащую AI
-  getAiTeam(teamsArr) {
+  getAiTeam() {
+    const teamsArr = this.ctrl.charTeams;
     for (let i = 0; i < teamsArr.length; i++) {
-      if (!GameState.isPlayerTeam(teamsArr[i])) { return teamsArr[i]; }
+      if (!this.gameState.isPlayerTeam(teamsArr[i])) {
+        return teamsArr[i];
+      }
     }
+    return null;
   }
 
   refreshTeams() {

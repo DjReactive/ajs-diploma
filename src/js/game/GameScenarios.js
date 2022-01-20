@@ -1,9 +1,5 @@
-import GameState from './GameState';
-
 export default class GameScenarios {
-  static game = GameState.game;
-
-  static get(level = this.game.map.level) {
+  static get(level) {
     let obj;
     switch (level) {
       case 1:
@@ -16,8 +12,8 @@ export default class GameScenarios {
             playercount: false,
             count: 2,
             maxlevel: 1,
-          }
-        }
+          },
+        };
         break;
       case 2:
         obj = {
@@ -28,8 +24,8 @@ export default class GameScenarios {
           ai: {
             playercount: true,
             maxlevel: 2,
-          }
-        }
+          },
+        };
         break;
       case 3:
         obj = {
@@ -40,8 +36,8 @@ export default class GameScenarios {
           ai: {
             playercount: true,
             maxlevel: 3,
-          }
-        }
+          },
+        };
         break;
       case 4:
         obj = {
@@ -52,8 +48,8 @@ export default class GameScenarios {
           ai: {
             playercount: true,
             maxlevel: 4,
-          }
-        }
+          },
+        };
         break;
       default:
         break;

@@ -1,11 +1,8 @@
 import themes from '../themes';
 import {
-  characterGenerator, generateTeam,
-  addCharacterOnTeam, addCharactersOnTeam,
-  getRandomIntInclusive,
+  generateTeam, addCharacterOnTeam, addCharactersOnTeam,
 } from '../utils/generators';
 import GameState from './GameState';
-import GameStateService from './GameStateService';
 import GameScenarios from './GameScenarios';
 import AppFunc from '../utils/functions';
 
@@ -17,11 +14,16 @@ export default class GameController {
   startSettings(gamePlay, stateService) {
     this.gamePlay = gamePlay;
     this.stateService = stateService;
-    this.charTeams = []; // массив с командами PositionedCharacter
-    this.allPosCharacters = []; // массив со всеми PositionedCharacter
-    this.charStepsAllow = []; // массив в котором находятся допустимые для игрока ячейки для будущего хода
-    this.boardLines = []; // массив с разделением каждой линии поля (нужен для приведения его к двумерному виду)
-    this.charSelected = { // информация о текущем выбранном персонаже, если такой имеется
+    // массив с командами PositionedCharacter
+    this.charTeams = [];
+    // массив со всеми PositionedCharacter
+    this.allPosCharacters = [];
+    // массив в котором находятся допустимые для игрока ячейки для будущего хода
+    this.charStepsAllow = [];
+    // массив с разделением каждой линии поля (нужен для приведения его к двумерному виду)
+    this.boardLines = [];
+    // информация о текущем выбранном персонаже, если такой имеется
+    this.charSelected = {
       index: -1,
       character: null,
       action: null,
@@ -47,7 +49,6 @@ export default class GameController {
     this.gamePlay.addSaveGameListener(this.clickSaveGame);
     this.gamePlay.addLoadGameListener(this.clickLoadGame);
     this.gamePlay.addNewGameListener(this.clickNewGame);
-
     this.startNewGame();
     // TODO: load saved stated from stateService
   }
@@ -75,18 +76,22 @@ export default class GameController {
 
     const char = AppFunc.checkCellCharacter(index, this.allPosCharacters);
     const selected = this.charSelected;
+    const appCheckAttack = AppFunc.checkAllowedCharacterAttack;
+    const appCheckStep = AppFunc.setAllowedCharacterStep.bind(AppFunc);
+
     if (char !== null) {
       if (selected.index === index) {
         AppFunc.deselectAll(this.gamePlay);
         this.selectOff();
       } else if (char.character.health > 0) {
-        if ((selected.character === null) || (selected.character.isPlayer === char.isPlayer)) {
+        const select = selected.character;
+        if ((select === null) || (select.isPlayer === char.isPlayer)) {
           if (char.isPlayer) {
             AppFunc.deselectAll(this.gamePlay);
             this.gamePlay.selectCell(index);
             selected.index = index;
             selected.character = char;
-            [this.charStepsAllow, this.boardLines] = AppFunc.setAllowedCharacterStep(
+            [this.charStepsAllow, this.boardLines] = appCheckStep(
               selected.character.character,
               selected.index,
               this.gamePlay.boardSize,
@@ -94,19 +99,25 @@ export default class GameController {
             );
           } else this.gamePlay.showError('Выберите своего персонажа!');
         } else {
-          if (AppFunc.checkAllowedCharacterAttack(index, selected.index, selected.character.character, this.boardLines)
-            && !selected.action) {
+          const args = [
+            index,
+            selected.index,
+            selected.character.character,
+            this.boardLines,
+          ];
+          if (appCheckAttack(...args) && !selected.action) {
             // Игрок атакует
             selected.action = 'attack';
             (async () => {
-              const dmg = char.character.damage(selected.character.character.attack, true);
+              const sChar = selected.character;
+              const dmg = char.character.damage(sChar.character.attack, true);
               await this.gamePlay.showDamage(index, dmg);
               GameState.actionMessage(selected.action, {
-                attacker: selected.character,
+                attacker: sChar,
                 victim: char,
                 damage: dmg,
               });
-              this.makingMove('attack', index, selected.character, char);
+              this.makingMove('attack', index, sChar, char);
             })();
           } // else this.gamePlay.showError('Враг недоступен для атаки в данный момент');
         }
@@ -128,6 +139,9 @@ export default class GameController {
     // TODO: react to mouse enter
     const char = AppFunc.checkCellCharacter(index, this.allPosCharacters);
     const selected = this.charSelected;
+    const appCheckAttack = AppFunc.checkAllowedCharacterAttack;
+    const appCheckStep = AppFunc.checkAllowedCharacterStep.bind(AppFunc);
+
     if (char !== null) {
       this.gamePlay.setCursor('pointer');
       this.gamePlay.showCellTooltip(
@@ -139,9 +153,16 @@ export default class GameController {
 
     if (selected.character !== null) {
       AppFunc.deselectAll(this.gamePlay, selected.index);
-      if ((AppFunc.checkAllowedCharacterStep(index, this.charStepsAllow) && char === null)
-      || (AppFunc.checkAllowedCharacterAttack(index, selected.index, selected.character.character, this.boardLines)
-      && char !== null)) {
+      const args = [
+        index,
+        selected.index,
+        selected.character.character,
+        this.boardLines,
+      ];
+      const isStep = appCheckStep(index, this.charStepsAllow) && char === null;
+      const isAttack = appCheckAttack(...args) && char !== null;
+
+      if (isStep || isAttack) {
         if (selected.index !== index) {
           if (char !== null) {
             if (char.isPlayer !== selected.character.isPlayer) {
@@ -153,13 +174,15 @@ export default class GameController {
             this.gamePlay.selectCell(index, 'green');
           }
         }
-      } else if (char === null || char.isPlayer !== selected.character.isPlayer) { this.gamePlay.setCursor('not-allowed'); }
+      } else if (char === null || char.isPlayer !== selected.character.isPlayer) {
+        this.gamePlay.setCursor('not-allowed');
+      }
     }
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
-    this.gamePlay.setCursor('default');
+    this.gamePlay.setCursor();
     this.gamePlay.hideCellTooltip(index);
   }
 
@@ -167,12 +190,13 @@ export default class GameController {
     switch (action) {
       case 'attack':
         if (args.length < 1) throw new Error('Ошибка передачи аргумента');
-        const enemyPos = args[0];
-        charPos.character.attacking(enemyPos.character);
-        if (enemyPos.character.health <= 0) this.refreshTeams();
+        charPos.character.attacking(args[0].character);
+        if (args[0].character.health <= 0) this.refreshTeams();
         break;
       case 'move':
         charPos.position = index;
+        break;
+      default:
         break;
     }
     this.charSelected.action = null;
@@ -180,21 +204,33 @@ export default class GameController {
 
     // Если после последнего хода уровень был завершен, осуществляем обновление уровня
     const gamestate = GameState.next(() => this.update());
-    if (typeof gamestate === 'object') this.nextLevel(gamestate.nextmap, gamestate.level);
+    if (gamestate !== null) {
+      this.nextLevel(gamestate.nextmap, gamestate.level);
+    }
   }
 
   nextLevel(mapname, level) {
-    const scenario = GameScenarios.get(level);
+    const scen = GameScenarios.get(level);
 
     // Добавляем персонажей игроку по сценарию
     const teamPlayer = this.getTeam();
-    const countPlayer = scenario.players.count;
-    addCharactersOnTeam(teamPlayer, GameState.playerClasses, scenario.players.maxlevel, countPlayer);
+    const countPlayer = scen.players.count;
+    addCharactersOnTeam(
+      teamPlayer,
+      GameState.playerClasses,
+      scen.players.maxlevel,
+      countPlayer,
+    );
 
     // Добавляем персонажей AI по сценарию
     const teamAi = this.getTeam(false);
-    const countAi = scenario.ai.playercount ? teamPlayer.characters.size : scenario.ai.count;
-    addCharactersOnTeam(teamAi, GameState.aiClasses, scenario.ai.maxlevel, countAi, false);
+    const countAi = scen.ai.playercount ? teamPlayer.characters.size : scen.ai.count;
+    addCharactersOnTeam(
+      teamAi,
+      GameState.aiClasses,
+      scen.ai.maxlevel,
+      countAi, false,
+    );
 
     this.update();
     this.gamePlay.drawUi(themes[mapname]);

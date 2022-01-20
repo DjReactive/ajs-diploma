@@ -1,3 +1,5 @@
 dist
 coverage
 docs
+server.js
+GamePlay.js
