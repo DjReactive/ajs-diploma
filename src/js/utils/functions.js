@@ -190,4 +190,10 @@ export default class AppFunc {
       if (index !== i) gamePlay.deselectCell(i);
     }
   }
+
+  static getCharacterInfo(posCharacter) {
+    const char = posCharacter.character;
+    return `\u{1F396}${char.level} \u{2694}${char.attack} `
+    + `\u{1F6E1}${char.defence} \u{2764}${char.health}`
+  }
 }

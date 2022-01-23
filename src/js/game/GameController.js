@@ -144,11 +144,7 @@ export default class GameController {
 
     if (char !== null) {
       this.gamePlay.setCursor('pointer');
-      this.gamePlay.showCellTooltip(
-        `\u{1F396}${char.character.level} \u{2694}${char.character.attack} `
-      + `\u{1F6E1}${char.character.defence} \u{2764}${char.character.health}`,
-        index,
-      );
+      this.gamePlay.showCellTooltip(AppFunc.getCharacterInfo(char), index);
     }
 
     if (selected.character !== null) {
